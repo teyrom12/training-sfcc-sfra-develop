@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<users xmlns="http://www.demandware.com/xml/impex/user/2007-09-05">
+    <user login="albert.antonesei@yahoo.com" enabled-flag="true">
+        <credentials>
+            <external-id>daa73b7d-7ef5-4f12-be95-43cf5f0763b2</external-id>
+        </credentials>
+        <profile>
+            <first-name>Albert</first-name>
+            <last-name>Antonesei</last-name>
+            <email>albert.antonesei@yahoo.com</email>
+        </profile>
+    </user>
+
+</users>
