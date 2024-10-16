@@ -3,8 +3,12 @@
 var server = require('server');
 
 server.get('HelloWorld', function (req, res, next) {
-    // This will handle requests to the HelloWorld route
-    res.render('training/myfirsttemplate');
+    var myVariable = "Just a string";
+
+    res.render("training/myfirsttemplate", {
+        myVariable: myVariable
+    });
+
     return next();
 });
 

@@ -1,17 +1,14 @@
 'use strict';
 
 var server = require('server');
-var controller = require(module.superModule);
 
-server.extend(controller);
+server.extend(module.superModule);
 
-server.append('MiniCartShow', function(req, res, next) {
+server.append('Show', function (req, res, next) {
     var viewData = res.getViewData();
-
-    viewData.example = "One String";
+    viewData.example = "One string";
 
     res.setViewData(viewData);
-
     return next();
 });
 
