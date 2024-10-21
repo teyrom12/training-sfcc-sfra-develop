@@ -1,0 +1,9 @@
+<p>Dear ${pdict.CustomerFirstName},</p>
+<p>The following product was added to your car:</p>
+
+<isloop items="${pdict.productList}" var="product">
+    <p>Product: ${product.name}</p>
+    <p>Price: ${product.price}</p>
+</isloop>
+
+<p>Thank you for shopping with us!</p>

@@ -51,11 +51,13 @@ server.post('AddProduct', function (req, res, next) {
     var BasketMgr = require('dw/order/BasketMgr');
     var Resource = require('dw/web/Resource');
     var URLUtils = require('dw/web/URLUtils');
+    var emailHelpers = require('*/cartridge/scripts/helpers/emailHelpers'); // Add the email helpers
     var Transaction = require('dw/system/Transaction');
     var CartModel = require('*/cartridge/models/cart');
     var ProductLineItemsModel = require('*/cartridge/models/productLineItems');
     var cartHelper = require('*/cartridge/scripts/cart/cartHelpers');
     var basketCalculationHelpers = require('*/cartridge/scripts/helpers/basketCalculationHelpers');
+    var collections = require('*/cartridge/scripts/util/collections');
 
     var currentBasket = BasketMgr.getCurrentOrNewBasket();
     var previousBonusDiscountLineItems = currentBasket.getBonusDiscountLineItems();
@@ -67,7 +69,9 @@ server.post('AddProduct', function (req, res, next) {
     var quantity;
     var result;
     var pidsObj;
+    var customer = req.currentCustomer.profile; // Get customer profile for email sending
 
+    // Adding product to cart
     if (currentBasket) {
         Transaction.wrap(function () {
             if (!req.form.pidsObj) {
@@ -103,9 +107,16 @@ server.post('AddProduct', function (req, res, next) {
                     }
                 });
             }
+
             if (!result.error) {
                 cartHelper.ensureAllShipmentsHaveMethods(currentBasket);
                 basketCalculationHelpers.calculateTotals(currentBasket);
+
+                // Send cart email notification if the customer is authenticated
+                if (customer) {
+                    var productList = currentBasket.productLineItems;
+                    emailHelpers.sendCartNotification(customer.email, customer.firstName, productList);
+                }
             }
         });
     }
@@ -125,9 +136,9 @@ server.post('AddProduct', function (req, res, next) {
         urlObject,
         result.uuid
     );
+
     if (newBonusDiscountLineItem) {
         var allLineItems = currentBasket.allProductLineItems;
-        var collections = require('*/cartridge/scripts/util/collections');
         collections.forEach(allLineItems, function (pli) {
             if (pli.UUID === result.uuid) {
                 Transaction.wrap(function () {
