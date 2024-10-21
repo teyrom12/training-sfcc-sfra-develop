@@ -185,11 +185,14 @@ server.get(
         var cartTotal = currentBasket.totalGrossPrice.value;
         var reportingURLs;
 
+        //TEXT
         if (cartTotal >= cartTotalThreshold) {
             res.setViewData({
                 cartTotalMessage: 'Your cart total exceeds the threshold of ' + cartTotalThreshold + '!'
             });
         }
+
+
         
 
         if (currentBasket) {
