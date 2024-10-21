@@ -5,29 +5,37 @@ var CSVStreamWriter = require('dw/io/CSVStreamWriter');
 var File = require('dw/io/File');
 var Transaction = require('dw/system/Transaction');
 
-/**
- * Main function for the job.
- * @param {dw.job.JobStepExecution} jobStepExecution
- * @param {Object} parameters - Passed parameters (firstParam, secondParam, thirdParam)
- * @returns {dw.system.Status}
- */
-function execute(jobStepExecution, parameters) {
 
+/**
+* Executes a job step to export new orders to a CSV file.
+*
+* This function searches for orders with a status of 'new', writes their details
+* to a CSV file, and handles any errors that occur during the process.
+*
+* @param {Object} jobStepExecution - The context of the job step execution.
+* @param {Object} parameters - The parameters provided for the job execution.
+* @returns {dw.system.Status} - The status of the job execution, indicating success or failure.
+*
+* @throws {Error} If an error occurs during the transaction, it is logged and a failure status is returned.
+*
+* @example
+* // Example usage:
+* var status = execute(jobStepExecution, parameters);
+* if (status.isError()) {
+*     // Handle error
+* }
+*/
+function execute(jobStepExecution, parameters) {
     try {
-        // Start a transaction (if necessary)
         Transaction.wrap(function () {
-            // Fetch orders to process
             var orderIterator = OrderMgr.searchOrders("status = {0}", "creationDate desc", dw.order.Order.ORDER_STATUS_NEW);
             
-            // Create a CSV file
             var file = new File(File.IMPEX + '/src/order_export.csv');
             var fileWriter = new FileWriter(file);
             var csvWriter = new CSVStreamWriter(fileWriter);
 
-            // Write CSV headers
             csvWriter.writeNext(['Order No', 'Customer Name', 'Total Price']);
 
-            // Iterate through the orders and write them to the CSV
             while (orderIterator.hasNext()) {
                 var order = orderIterator.next();
                 csvWriter.writeNext([
@@ -36,16 +44,13 @@ function execute(jobStepExecution, parameters) {
                     order.totalGrossPrice.value
                 ]);
             }
-
-            // Close the CSV writer
             csvWriter.close();
             fileWriter.close();
         });
 
-        // Return OK status after successful execution
         return new Status(Status.OK, 'OK', 'Job executed successfully');
     } catch (e) {
-        // Log the error and return ERROR status
+
         dw.system.Logger.error('Error occurred during the job execution: ' + e.toString());
         return new Status(Status.ERROR, 'ERROR', 'Job execution failed');
     }
