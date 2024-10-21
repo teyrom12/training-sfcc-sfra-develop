@@ -140,9 +140,44 @@
             <isset name="loopState" value="${{count: 1}}" scope="page" />
             <isinclude template="product/components/descriptionAndDetails" />
 
-            <div>
-            <p>This is the suggested products section.</p>
-            </div>
+
+
+<p>Suggested products count: ${pdict.suggestedProducts.size()}</p>
+<p>Number: ${pdict.number}</p>
+<p>${pdict}</p>
+<p>Number: ${pdict.number}</p>
+<p>Product: ${pdict.product}</p>
+<p>Suggested Products: ${pdict.suggestedProducts}</p>
+
+
+<p>${Resource.msgf('suggested.products.label', 'product', null, pdict.number)}</p>
+<p>Number value: ${pdict.number}</p>
+<p>${Resource.msgf('simple.message', 'product', null, pdict.number)}</p>
+
+<isif condition="${!empty pdict.suggestedProducts}">
+    <div class="suggested-products-section">
+        <h2>Suggested Products</h2>
+        <div class="product-grid">
+            <isloop items="${pdict.suggestedProducts}" var="product">
+                <div class="product-tile">
+                    <h3>${product.productName}</h3>
+                    <p>Price: ${product.price}</p>
+                    <a href="${product.URL}">View Product</a>
+                </div>
+            </isloop>
+        </div>
+    </div>
+<iselse>
+    <p>No suggested products available.</p>
+</iselse>
+
+
+
+
+
+
+
+
 
             <div class="recommendations">
                 <isslot id="product-recommendations-m" description="Recommended products" context="global" context-object="${pdict.product.raw}" />

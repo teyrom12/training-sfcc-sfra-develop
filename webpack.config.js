@@ -32,67 +32,71 @@ class MiniCssExtractPluginCleanup {
 }
 
 function getJSBundle(env, cartridge) {
-    const clientPath = path.resolve(__dirname, "cartridges", cartridge, "cartridge/client");
+    const clientPath = path.resolve(__dirname, "cartridges", cartridge, "cartridge", "client", "default", "js").replace(/\\/g, "/");
+    
+    // Check if the client path exists
     if (!fse.existsSync(clientPath)) {
         console.error(`${chalk.red.bold("[ERROR] \u2716")} clientPath=${clientPath} does not exist!`);
         process.exit(1);
     }
 
-    const bundle = {};
+    // Use a glob pattern to find JS files
+    const globPattern = path.join(clientPath, "**", "*.js").replace(/\\/g, "/");
+    const matchedFiles = glob.sync(globPattern);
 
-    if (env.production) {
-        bundle.mode = "production";
-    } else {
-        bundle.mode = "development";
-        bundle.devtool = false;
-    }
+    //console.log("Glob pattern used:", globPattern);
+    //console.log("Matched JS files:", matchedFiles);
 
-    bundle.entry = {};
-    glob.sync(path.resolve(clientPath, "*", "js", "*.js")).forEach((f) => {
-        const key = path.join(path.dirname(path.relative(clientPath, f)), path.basename(f, ".js"));
-        bundle.entry[key] = f;
+    const bundle = {
+        mode: env.production ? "production" : "development",
+        devtool: env.production ? false : "source-map", // Enable source maps in development
+        entry: {},
+        output: {
+            path: path.resolve(__dirname, "cartridges", cartridge, "cartridge/static", "js"), // Ensure output path is correct
+            filename: "[name].js",
+        },
+        module: {
+            rules: [
+                {
+                    test: /\.(js|jsx)$/,
+                    use: [
+                        {
+                            loader: "babel-loader",
+                            options: {
+                                compact: false,
+                                babelrc: false,
+                                cacheDirectory: true,
+                                presets: ["@babel/preset-env"],
+                                plugins: ["@babel/plugin-proposal-object-rest-spread"],
+                            },
+                        },
+                    ],
+                },
+            ],
+        },
+        plugins: [
+            new CleanWebpackPlugin({
+                cleanOnceBeforeBuildPatterns: [path.resolve(__dirname, "cartridges", cartridge, "cartridge/static/js/*")],
+                cleanAfterEveryBuildPatterns: [],
+            }),
+        ],
+        optimization: {
+            minimizer: [new TerserPlugin()],
+        },
+    };
+
+    // Populate the entry object with matched files
+    matchedFiles.forEach((file) => {
+        const key = path.relative(clientPath, file).replace(/\.js$/, ""); // Use relative path for keys
+        bundle.entry[key] = file;
     });
 
     if (Object.keys(bundle.entry).length === 0) {
         console.warn(`${chalk.yellow.bold("[WARNING] \u2716")} No JS files to compile for cartridge=${cartridge}!`);
-        return;
+        return; // Return early if there are no files
     }
 
-    bundle.output = {
-        path: path.resolve(__dirname, "cartridges", cartridge, "cartridge/static"),
-        filename: "[name].js",
-    };
-
-    bundle.module = {
-        rules: [
-            {
-                test: /\\.(js|jsx)$/,
-                use: [
-                    {
-                        loader: "babel-loader",
-                        options: {
-                            compact: false,
-                            babelrc: false,
-                            cacheDirectory: true,
-                            presets: ["@babel/preset-env"],
-                            // See https://babeljs.io/docs/en/plugins-list
-                            plugins: ["@babel/plugin-proposal-object-rest-spread"],
-                        },
-                    },
-                ],
-            },
-        ],
-    };
-
-    bundle.plugins = [
-        new CleanWebpackPlugin({
-            cleanOnceBeforeBuildPatterns: [path.resolve(__dirname, "cartridges", cartridge, "cartridge/static/*/js")],
-            cleanAfterEveryBuildPatterns: [],
-        }),
-    ].filter(Boolean);
-
-    bundle.optimization = { minimizer: [new TerserPlugin()] };
-
+    // Handle alias if defined in package.json
     if (pkg.aliasJS) {
         const alias = {};
         Object.entries(pkg.aliasJS).forEach(([key, value]) => {
@@ -106,138 +110,144 @@ function getJSBundle(env, cartridge) {
 }
 
 function getCSSBundle(env, cartridge) {
-    const clientPath = path.resolve(__dirname, "cartridges", cartridge, "cartridge/client");
+    const clientPath = path.resolve(__dirname, "cartridges", cartridge, "cartridge", "client", "default", "scss").replace(/\\/g, "/");
+    
+    // Check if the client path exists
     if (!fse.existsSync(clientPath)) {
         console.error(`${chalk.red.bold("[ERROR] \u2716")} clientPath=${clientPath} does not exist!`);
         process.exit(1);
     }
 
-    const bundle = {};
+    // Use a glob pattern to find SCSS files
+    const globPattern = path.join(clientPath, "**", "*.scss").replace(/\\/g, "/");
+    const matchedFiles = glob.sync(globPattern);
 
-    if (env.production) {
-        bundle.mode = "production";
-    } else {
-        bundle.mode = "development";
-        bundle.devtool = false;
-    }
-
-    bundle.entry = {};
-    glob.sync(path.resolve(clientPath, "*", "scss", "**", "*.scss"))
-        .filter((f) => !path.basename(f).startsWith("_"))
-        .forEach((f) => {
-            const key = path
-                .join(path.dirname(path.relative(clientPath, f)), path.basename(f, ".scss"))
-                .split(path.sep)
-                .map((pPart, pIdx) => (pIdx === 1 && pPart === "scss" ? "css" : pPart))
-                .join(path.sep);
-
-            bundle.entry[key] = f;
-        });
-
-    if (Object.keys(bundle.entry).length === 0) {
-        console.warn(`${chalk.yellow.bold("[WARNING] \u2716")} No SCSS files to compile for cartridge=${cartridge}!`);
-        return;
-    }
-
-    bundle.output = {
-        path: path.resolve(__dirname, "cartridges", cartridge, "cartridge/static"),
-        filename: "[name].js",
-    };
-
-    bundle.module = {
-        rules: [
-            {
-                test: /\.s[ac]ss$/i,
-                use: [
-                    { loader: MiniCssExtractPlugin.loader },
-                    { loader: "css-loader", options: { url: false } },
-                    {
-                        loader: "postcss-loader",
-                        options: {
-                            postcssOptions: {
-                                plugins: [autoprefixer],
-                            },
-                        },
-                    },
-                    { loader: "sass-loader" },
-                ],
-            },
-            {
-                test: /\.css$/i,
-                use: [
-                    { loader: MiniCssExtractPlugin.loader },
-                    { loader: "css-loader", options: { url: false } },
-                    {
-                        loader: "postcss-loader",
-                        options: {
-                            postcssOptions: {
-                                plugins: [autoprefixer],
-                            },
-                        },
-                    },
-                ],
-            },
-        ],
-    };
-
-    bundle.plugins = [
-        new CleanWebpackPlugin({
-            cleanOnceBeforeBuildPatterns: [path.resolve(__dirname, "cartridges", cartridge, "cartridge/static/*/css")],
-            cleanAfterEveryBuildPatterns: [],
-        }),
-        new MiniCssExtractPlugin(),
-        new MiniCssExtractPluginCleanup(),
-        // bm_smartorderrefill using local libs so we need to copy them to static
-        (cartridge === "bm_smartorderrefill") ? new CopyPlugin({
-            patterns: [
+    const bundle = {
+        mode: env.production ? "production" : "development",
+        devtool: env.production ? false : 'source-map', // Enable source maps in development mode
+        entry: {},
+        output: {
+            path: path.resolve(__dirname, "cartridges", cartridge, "cartridge/static", "css"), // Ensure output path is correct
+            filename: "[name].js",
+        },
+        module: {
+            rules: [
                 {
-                    from: path.resolve(__dirname, "cartridges", cartridge, "cartridge", "client", "default", "lib", "css"),
-                    to: path.resolve(__dirname, "cartridges", cartridge, "cartridge", "static", "default", "css")
-                }
-            ]
-        }) : null
-    ].filter(Boolean);
-
-    bundle.optimization = {
-        minimizer: [
-            new CssMinimizerPlugin({
-                minimizerOptions: {
-                    preset: [
-                        "default",
+                    test: /\.s[ac]ss$/i,
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        { loader: "css-loader", options: { url: false } },
                         {
-                            discardComments: { removeAll: true },
+                            loader: "postcss-loader",
+                            options: {
+                                postcssOptions: {
+                                    plugins: [autoprefixer],
+                                },
+                            },
+                        },
+                        "sass-loader",
+                    ],
+                },
+                {
+                    test: /\.css$/i,
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        { loader: "css-loader", options: { url: false } },
+                        {
+                            loader: "postcss-loader",
+                            options: {
+                                postcssOptions: {
+                                    plugins: [autoprefixer],
+                                },
+                            },
                         },
                     ],
                 },
+            ],
+        },
+        plugins: [
+            new CleanWebpackPlugin({
+                cleanOnceBeforeBuildPatterns: [path.resolve(__dirname, "cartridges", cartridge, "cartridge/static/css/*")],
             }),
-        ],
+            new MiniCssExtractPlugin(),
+            (cartridge === "bm_smartorderrefill") ? new CopyPlugin({
+                patterns: [
+                    {
+                        from: path.resolve(__dirname, "cartridges", cartridge, "cartridge", "client", "default", "lib", "css"),
+                        to: path.resolve(__dirname, "cartridges", cartridge, "cartridge", "static", "default", "css")
+                    }
+                ]
+            }) : null
+        ].filter(Boolean),
+        optimization: {
+            minimizer: [
+                new CssMinimizerPlugin({
+                    minimizerOptions: {
+                        preset: [
+                            "default",
+                            {
+                                discardComments: { removeAll: true },
+                            },
+                        ],
+                    },
+                }),
+            ],
+        },
     };
 
+    // Populate the entry object with matched files
+    matchedFiles.forEach((file) => {
+        const key = path.relative(clientPath, file).replace(/\.scss$/, ""); // Use relative path for keys
+        bundle.entry[key] = file;
+    });
+
+    if (Object.keys(bundle.entry).length === 0) {
+        console.warn(`${chalk.yellow.bold("[WARNING] \u2716")} No SCSS files to compile for cartridge=${cartridge}!`);
+        return; // Return early if there are no files
+    }
+
+    // Handle alias if defined in package.json
     if (pkg.aliasCSS) {
         const alias = {};
         Object.entries(pkg.aliasCSS).forEach(([key, value]) => {
             alias[key] = path.resolve(__dirname, value);
         });
-
         bundle.resolve = { alias };
     }
 
     return bundle;
 }
 
+
 module.exports = (env, _argv) => {
-    if (!pkg.cartridges) {
-        console.error(`${chalk.red.bold("[ERROR] \u2716")} package.json does not contain the "cartridges" entry!`);
+    // Check if the cartridges entry exists in package.json
+    if (!pkg.cartridges || !Array.isArray(pkg.cartridges)) {
+        console.error(`${chalk.red.bold("[ERROR] \u2716")} package.json does not contain a valid "cartridges" entry!`);
         process.exit(1);
     }
 
-    const configurations = [];
-    let cartridgeBundle;
-    pkg.cartridges.forEach((cartridge) => {
-        cartridgeBundle = getJSBundle(env, cartridge);
-        cartridgeBundle && configurations.push(cartridgeBundle);
-        cartridgeBundle = getCSSBundle(env, cartridge);
-        cartridgeBundle && configurations.push(cartridgeBundle);
+    // Create configurations for JS and CSS bundles
+    const configurations = pkg.cartridges.flatMap((cartridge) => {
+        console.log(`Processing cartridge: ${cartridge}`);
+
+        // Get JS bundle
+        const jsBundle = getJSBundle(env, cartridge);
+        if (jsBundle) {
+            console.log(`JS bundle created for cartridge: ${cartridge}`);
+        } else {
+            console.warn(`${chalk.yellow.bold("[WARNING] \u2716")} No JS bundle created for cartridge: ${cartridge}`);
+        }
+
+        // Get CSS bundle
+        const cssBundle = getCSSBundle(env, cartridge);
+        if (cssBundle) {
+            console.log(`CSS bundle created for cartridge: ${cartridge}`);
+        } else {
+            console.warn(`${chalk.yellow.bold("[WARNING] \u2716")} No CSS bundle created for cartridge: ${cartridge}`);
+        }
+
+        return [jsBundle, cssBundle].filter(Boolean); // Return only defined bundles
     });
+
     return configurations;
 };

@@ -65,6 +65,7 @@ server.get('Show', cache.applyPromotionSensitiveCache, function (req, res, next)
         discountPercentage = productHelper.calculateDiscountPercentage(product.price.list.value, product.price.sales.value);
     }
 
+
     var context = {
         product: product,
         urls: {

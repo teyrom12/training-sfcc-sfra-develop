@@ -61,10 +61,9 @@ server.get('Show', cache.applyPromotionSensitiveCache, consentTracking.consent, 
         }
     }
 
-    var number = 10;
-    var context = { number: number};
-    res.setViewData(context);
-
+var number = 10;
+var context = {number:number};
+res.setViewData(context);
 
     next();
 }, pageMetaData.computedPageMetaData);

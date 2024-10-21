@@ -1,9 +1,7 @@
 {
     "osfdigital.wingman.workspaceIndexingSettings": {
-        "indexingState": 4,
-        "indexedWorkspaceId": "c9a0e4f3875361ef607254c43afc1218bbf09ae4e603d4063cb00814673b7a28",
-        "uploadedFiles": 915,
-        "indexingId": "0ac510699ccf9e305879f9cb84eb4e29f4b15540bac284d5b445a787807e5a63"
+        "uploadedFiles": 0,
+        "indexingState": 3
     },
     "osfdigital.wingman.knowledgeBaseSettings": {
         "salesforceDevEnabled": true,
