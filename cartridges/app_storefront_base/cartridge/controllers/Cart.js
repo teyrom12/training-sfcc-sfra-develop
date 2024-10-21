@@ -178,9 +178,19 @@ server.get(
         var cartHelper = require('*/cartridge/scripts/cart/cartHelpers');
         var reportingUrlsHelper = require('*/cartridge/scripts/reportingUrls');
         var basketCalculationHelpers = require('*/cartridge/scripts/helpers/basketCalculationHelpers');
+        var cartTotalThreshold = require('dw/system/Site').getCurrent().getCustomPreferenceValue('cartTotalThreshold');
+
 
         var currentBasket = BasketMgr.getCurrentBasket();
+        var cartTotal = currentBasket.totalGrossPrice.value;
         var reportingURLs;
+
+        if (cartTotal >= cartTotalThreshold) {
+            res.setViewData({
+                cartTotalMessage: 'Your cart total exceeds the threshold of ' + cartTotalThreshold + '!'
+            });
+        }
+        
 
         if (currentBasket) {
             Transaction.wrap(function () {
