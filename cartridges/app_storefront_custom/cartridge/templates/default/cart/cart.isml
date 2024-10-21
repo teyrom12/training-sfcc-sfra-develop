@@ -64,8 +64,15 @@
                             </isif>
                         </isif>
                     </isloop>
+                    <isif condition="${pdict.cartTotalMessage}">
+    <div class="cart-warning">
+        ${pdict.cartTotalMessage}
+    </div>
+</isif>
+
                     <isinclude template="cart/cartApproachingDiscount" />
                 </div>
+                
                 <!---totals, and checkout actions--->
                 <div class="col-sm-5 col-md-4 totals">
                     <isinclude template="cart/cartPromoCode" />
