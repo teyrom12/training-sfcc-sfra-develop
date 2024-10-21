@@ -1,37 +1,53 @@
-'use strict';
-
-/* API includes */
 var Status = require('dw/system/Status');
-var Logger = require('dw/system/Logger');
+var OrderMgr = require('dw/order/OrderMgr');
+var FileWriter = require('dw/io/FileWriter');
+var CSVStreamWriter = require('dw/io/CSVStreamWriter');
+var File = require('dw/io/File');
+var Transaction = require('dw/system/Transaction');
+
 /**
- * Generate Log as an example for Hello World.
- * @input firstParam : String - First BM parameter.
- * @input secondParam : String - Second BM parameter.
- * @input firstParam : String - Third BM parameter.
- * @param {dw.util.HashMap} args which contain {firstParam, secondParam, thirdParam} parameters.
- * @returns {dw.system.Status} - job status
+ * Main function for the job.
+ * @param {dw.job.JobStepExecution} jobStepExecution
+ * @param {Object} parameters - Passed parameters (firstParam, secondParam, thirdParam)
+ * @returns {dw.system.Status}
  */
-
-function execute(args) {
-    if (empty(args.firstParam || args.secondParam || args.thirdParam)) {
-        Logger.error("Please set the following parameters (firstParam, secondParam, thirdParam)");
-        return new Status(Status.ERROR, "ERROR");
-    }
-
-    var statusOK = true;
+function execute(jobStepExecution, parameters) {
 
     try {
-        Logger.info("Your script parameters are: {0} {1} {2} !", args.firstParam, args.secondParam, args.thirdParam);
-        statusOK = true;
-    } catch (error) {
-        statusOK = false;
-        Logger.error(error.message);
-    }
+        // Start a transaction (if necessary)
+        Transaction.wrap(function () {
+            // Fetch orders to process
+            var orderIterator = OrderMgr.searchOrders("status = {0}", "creationDate desc", dw.order.Order.ORDER_STATUS_NEW);
+            
+            // Create a CSV file
+            var file = new File(File.IMPEX + '/src/order_export.csv');
+            var fileWriter = new FileWriter(file);
+            var csvWriter = new CSVStreamWriter(fileWriter);
 
-    if (statusOK) {
-        return new Status(Status.OK, "OK");
-    } else {
-        return new Status(Status.ERROR, "ERROR");
+            // Write CSV headers
+            csvWriter.writeNext(['Order No', 'Customer Name', 'Total Price']);
+
+            // Iterate through the orders and write them to the CSV
+            while (orderIterator.hasNext()) {
+                var order = orderIterator.next();
+                csvWriter.writeNext([
+                    order.orderNo,
+                    order.customerName,
+                    order.totalGrossPrice.value
+                ]);
+            }
+
+            // Close the CSV writer
+            csvWriter.close();
+            fileWriter.close();
+        });
+
+        // Return OK status after successful execution
+        return new Status(Status.OK, 'OK', 'Job executed successfully');
+    } catch (e) {
+        // Log the error and return ERROR status
+        dw.system.Logger.error('Error occurred during the job execution: ' + e.toString());
+        return new Status(Status.ERROR, 'ERROR', 'Job execution failed');
     }
 }
 
