@@ -179,6 +179,19 @@ server.get('Show', cache.applyShortPromotionSensitiveCache, consentTracking.cons
         res.redirect(redirectGridUrl);
     }
 
+    var PageMgr = require('dw/experience/PageMgr');
+    var CatalogMgr = require('dw/catalog/CatalogMgr');
+    var catId = request.httpParameterMap.cgid.value; 
+    var category = CatalogMgr.getCategory(catId);
+
+    var pageDesignerID = (category && 'pageDesignerPageID' in category.custom) ? category.custom.pageDesignerPageID : null;
+    var pageDesigner = pageDesignerID ? PageMgr.getPage(pageDesignerID) : null;
+
+    if (pageDesigner && pageDesigner.isVisible()) {
+        return response.writer.println(PageMgr.renderPage(pageDesigner.ID, ''));
+    }
+
+
     res.render(template, {
         productSearch: result.productSearch,
         maxSlots: result.maxSlots,
