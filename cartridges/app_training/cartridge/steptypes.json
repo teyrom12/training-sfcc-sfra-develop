@@ -1,0 +1,73 @@
+[
+  {
+      "@type-id": "custom.TestJob",
+      "@supports-parallel-execution": "false",
+      "@supports-site-context": "true",
+      "@supports-organization-context": "false",
+      "module": "app_training/cartridge/scripts/job/TestJobModule.js",
+      "function": "execute",
+      "transactional": "true",
+      "parameters": {
+          "parameter": [
+              {
+                  "@name": "firstParam",
+                  "@type": "string",
+                  "@required": "true"
+              },
+              {
+                  "@name": "secondParam",
+                  "@type": "string",
+                  "@required": "true"
+              },
+              {
+                  "@name": "thirdParam",
+                  "@type": "string",
+                  "@required": "true"
+              }
+          ]
+      },
+      "status-codes": {
+          "status": [
+              {
+                  "@code": "ERROR"
+              },
+              {
+                  "@code": "OK"
+              }
+          ]
+      }
+  },
+  {
+      "@type-id": "custom.AssignBrandToCategoryJob",
+      "@supports-parallel-execution": "false",
+      "@supports-site-context": "true",
+      "@supports-organization-context": "false",
+      "module": "app_training/cartridge/scripts/job/AssignBrandToCategory.js",
+      "function": "execute",
+      "transactional": "true",
+      "parameters": {
+          "parameter": [
+              {
+                  "@name": "brandParam",
+                  "@type": "string",
+                  "@required": "true"
+              },
+              {
+                  "@name": "categoryParam",
+                  "@type": "string",
+                  "@required": "true"
+              }
+          ]
+      },
+      "status-codes": {
+          "status": [
+              {
+                  "@code": "ERROR"
+              },
+              {
+                  "@code": "OK"
+              }
+          ]
+      }
+  }
+]
