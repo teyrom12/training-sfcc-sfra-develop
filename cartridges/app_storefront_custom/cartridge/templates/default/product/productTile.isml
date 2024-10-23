@@ -19,14 +19,6 @@
         </isif>
 
 
-        <isif condition="${!empty(pdict.discountPercentage)}">
-            <div class="discount-percentage">
-                ${Resource.msgf('best.deal.label', 'productTile', null, pdict.discountPercentage)}
-            </div>
-        </isif>
-
-
-
         <isif condition="${pdict.display.ratings !== false}">
             <isinclude template="product/productTileFooter" />
         </isif>
